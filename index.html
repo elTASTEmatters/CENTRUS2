@@ -1,192 +1,189 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor Operativo — CENTRUS2</title>
-  <style>
-    :root {
-      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-      --color-background-primary:   #0f0f11;
-      --color-background-secondary: #18181b;
-      --color-background-tertiary:  #1f1f23;
-      --color-background-success: rgba(34,197,94,0.10);
-      --color-background-warning: rgba(234,179,8,0.10);
-      --color-background-danger:  rgba(239,68,68,0.10);
-      --color-background-info:    rgba(14,165,233,0.12);
-      --color-text-primary:   #f4f4f5;
-      --color-text-secondary: #a1a1aa;
-      --color-text-tertiary:  #71717a;
-      --color-text-success:   #4ade80;
-      --color-text-warning:   #facc15;
-      --color-text-danger:    #f87171;
-      --color-text-info:      #38bdf8;
-      --color-border-tertiary: #27272a;
-      --color-border-secondary:#3f3f46;
-      --color-border-success:  rgba(34,197,94,0.3);
-      --color-border-warning:  rgba(234,179,8,0.3);
-      --color-border-danger:   rgba(239,68,68,0.3);
-      --color-border-info:     rgba(14,165,233,0.3);
-      --border-radius-md: 8px;
-      --border-radius-lg: 12px;
-    }
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    html, body { height:100%; background:var(--color-background-primary); }
-    body { font-family:var(--font-sans); color:var(--color-text-primary); }
-    input, textarea, select, button {
-      font-family: var(--font-sans); font-size: 13px;
-      color: var(--color-text-primary); background: var(--color-background-tertiary);
-      border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md);
-      padding: 8px 10px; outline: none; transition: border-color 0.15s;
-    }
-    input:focus, textarea:focus, select:focus { border-color: var(--color-border-info); }
-    button { cursor: pointer; background: var(--color-background-secondary); border-color: var(--color-border-secondary); padding: 8px 16px; }
-    button:hover { border-color: var(--color-border-info); color: var(--color-text-info); }
-    select option { background: var(--color-background-primary); }
-    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
-    .ticker-bar { background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 6px 0; overflow: hidden; }
-    .ticker-inner { display:flex; gap:50px; animation: ticker 30s linear infinite; white-space:nowrap; width:max-content; }
-    .ticker-inner:hover { animation-play-state:paused; }
-    @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-    .tick-item { font-family:var(--font-mono); font-size:11px; color:var(--color-text-secondary); display:flex; align-items:center; gap:7px; }
-    .tick-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-    .tick-ok   .tick-dot { background:#22c55e; }
-    .tick-warn .tick-dot { background:#eab308; }
-    .tick-stop .tick-dot { background:#ef4444; animation: blink 1s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .hdr { display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:0.5px solid var(--color-border-tertiary); background:var(--color-background-primary); }
-    .hdr-title { font-size:18px; font-weight:500; display:flex; align-items:center; gap:8px; }
-    .hdr-sub { font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-mono); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
-    .clock { font-family:var(--font-mono); font-size:16px; color:var(--color-text-info); font-weight:500; text-align:right; }
-    .date-s { font-size:11px; color:var(--color-text-tertiary); text-align:right; font-family:var(--font-mono); }
-    .body { padding:16px 20px 40px; }
-    .urg-bar { border-left:3px solid #ef4444; border-radius:0 var(--border-radius-md) var(--border-radius-md) 0; background:var(--color-background-danger); border-top:0.5px solid var(--color-border-danger); border-right:0.5px solid var(--color-border-danger); border-bottom:0.5px solid var(--color-border-danger); padding:12px 14px; margin-bottom:14px; cursor:pointer; }
-    .urg-bar:hover { background:var(--color-background-secondary); }
-    .urg-top { display:flex; align-items:center; gap:10px; }
-    .urg-lbl { font-size:12px; font-weight:500; color:var(--color-text-danger); letter-spacing:1px; text-transform:uppercase; font-family:var(--font-mono); }
-    .urg-empty { font-size:13px; color:var(--color-text-tertiary); font-style:italic; }
-    .urg-items { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
-    .urg-item { display:flex; gap:10px; align-items:flex-start; }
-    .urg-area { font-family:var(--font-mono); font-size:10px; color:var(--color-text-danger); text-transform:uppercase; min-width:80px; flex-shrink:0; padding-top:1px; }
-    .urg-text { font-size:13px; color:var(--color-text-danger); flex:1; }
-    .section-lbl { font-size:11px; font-weight:500; color:var(--color-text-tertiary); letter-spacing:2px; text-transform:uppercase; font-family:var(--font-mono); margin:18px 0 10px; display:flex; align-items:center; gap:10px; }
-    .section-lbl::after { content:''; flex:1; height:0.5px; background:var(--color-border-tertiary); }
-    .week-row { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:4px; }
-    .day-chip { text-align:center; padding:7px 4px; border-radius:var(--border-radius-md); background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); }
-    .day-chip.today { background:var(--color-background-info); border-color:var(--color-border-info); }
-    .day-dn { font-size:9px; color:var(--color-text-tertiary); text-transform:uppercase; letter-spacing:1px; font-family:var(--font-mono); }
-    .day-dd { font-size:18px; font-weight:500; color:var(--color-text-primary); line-height:1.3; }
-    .day-chip.today .day-dn, .day-chip.today .day-dd { color:var(--color-text-info); }
-    .card { background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:14px 16px; border-top:2px solid var(--card-accent,var(--color-border-info)); }
-    .card:hover { border-color:var(--color-border-secondary); }
-    .card.editable { cursor:pointer; border-color:var(--color-border-info) !important; }
-    .card.editable::after { content:'editar'; font-size:10px; font-family:var(--font-mono); color:var(--color-text-info); display:block; text-align:right; margin-top:4px; text-transform:uppercase; letter-spacing:1px; }
-    .card-hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
-    .card-ttl { font-size:15px; font-weight:500; }
-    .card-icon { font-size:18px; }
-    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
-    .badge { display:inline-flex; align-items:center; padding:2px 9px; border-radius:100px; font-size:10px; font-weight:500; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px; }
-    .b-green  { background:var(--color-background-success); color:var(--color-text-success); border:0.5px solid var(--color-border-success); }
-    .b-yellow { background:var(--color-background-warning); color:var(--color-text-warning); border:0.5px solid var(--color-border-warning); }
-    .b-red    { background:var(--color-background-danger);  color:var(--color-text-danger);  border:0.5px solid var(--color-border-danger); }
-    .b-info   { background:var(--color-background-info);   color:var(--color-text-info);    border:0.5px solid var(--color-border-info); }
-    .b-gray   { background:var(--color-background-secondary); color:var(--color-text-secondary); border:0.5px solid var(--color-border-tertiary); }
-    .prod-line { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:var(--border-radius-md); background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); margin-bottom:6px; }
-    .ldot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .ldot.on    { background:#22c55e; }
-    .ldot.maint { background:#eab308; }
-    .ldot.off   { background:#ef4444; }
-    .lname   { font-size:13px; font-weight:500; flex:1; }
-    .lclient { font-size:11px; font-family:var(--font-mono); color:var(--color-text-info); max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .lclient.empty { color:var(--color-text-tertiary); font-style:italic; }
-    .card-items { display:flex; flex-direction:column; gap:5px; margin-top:2px; }
-    .ci { display:flex; gap:8px; align-items:flex-start; padding:7px 9px; background:var(--color-background-secondary); border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); }
-    .ci-dot { width:5px; height:5px; border-radius:50%; background:var(--card-accent,var(--color-border-info)); flex-shrink:0; margin-top:5px; }
-    .ci-text { font-size:13px; color:var(--color-text-secondary); flex:1; line-height:1.5; }
-    .ci-tag { font-family:var(--font-mono); font-size:10px; color:var(--color-text-tertiary); flex-shrink:0; padding-top:2px; }
-    .card-upd { margin-top:8px; font-size:10px; color:var(--color-text-tertiary); font-family:var(--font-mono); }
-    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; }
-    .overlay.show { display:flex; }
-    .modal { background:var(--color-background-secondary); border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-lg); padding:24px; width:500px; max-width:95vw; max-height:85vh; overflow-y:auto; position:relative; }
-    .modal h3 { font-size:16px; font-weight:500; margin-bottom:16px; }
-    .modal-close { position:absolute; top:14px; right:14px; background:transparent; border:none; font-size:18px; cursor:pointer; color:var(--color-text-tertiary); line-height:1; }
-    .modal-close:hover { color:var(--color-text-primary); }
-    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
-    .fl { margin-bottom:12px; }
-    .fl label { display:block; font-size:11px; color:var(--color-text-tertiary); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; font-family:var(--font-mono); }
-    input[type=text], input[type=password], textarea, select { width:100%; }
-    .item-row { display:flex; gap:7px; align-items:flex-start; background:var(--color-background-tertiary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); padding:8px 10px; margin-bottom:7px; }
-    .item-row textarea { flex:1; background:transparent; border:none; border-bottom:0.5px solid var(--color-border-tertiary); border-radius:0; padding:2px 4px; font-size:13px; color:var(--color-text-primary); outline:none; resize:none; min-height:36px; font-family:var(--font-sans); }
-    .item-row textarea:focus { border-bottom-color:var(--color-border-info); }
-    .item-tag { width:80px; background:transparent; border:none; border-bottom:0.5px solid var(--color-border-tertiary); font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-mono); outline:none; padding:2px 4px; }
-    .item-tag:focus { border-bottom-color:var(--color-border-info); }
-    .rm-btn { background:transparent; border:none; color:var(--color-text-tertiary); cursor:pointer; font-size:16px; flex-shrink:0; }
-    .rm-btn:hover { color:var(--color-text-danger); }
-    .add-btn { display:flex; align-items:center; gap:6px; background:transparent; border:0.5px dashed var(--color-border-secondary); border-radius:var(--border-radius-md); padding:8px 12px; color:var(--color-text-tertiary); font-size:12px; cursor:pointer; width:100%; font-family:var(--font-sans); }
-    .add-btn:hover { border-color:var(--color-border-info); color:var(--color-text-info); }
-    .pe-row { display:grid; grid-template-columns:1.1fr auto 1.2fr; gap:7px; align-items:center; padding:8px 0; border-bottom:0.5px solid var(--color-border-tertiary); }
-    .pe-row:last-child { border:none; }
-    .pe-lbl { font-size:13px; font-weight:500; }
-    .saving-bar { text-align:center; padding:8px; font-size:12px; color:var(--color-text-tertiary); font-family:var(--font-mono); display:none; }
-    .fab { position:fixed; bottom:24px; right:24px; width:48px; height:48px; background:var(--color-background-info); border:none; border-radius:50%; font-size:18px; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.3); z-index:50; display:flex; align-items:center; justify-content:center; }
-    .fab.on { background:var(--color-background-success); }
-    .loading { text-align:center; padding:40px 20px; color:var(--color-text-tertiary); font-family:var(--font-mono); font-size:13px; }
-    .sync-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e; flex-shrink:0; }
-    .sync-dot.syncing { background:#eab308; animation:blink 0.8s infinite; }
-    .sync-dot.error { background:#ef4444; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Operativo — Tablero de Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10; --surface: #111318; --surface2: #181c24;
+    --border: #1e2430; --border2: #2a3045; --text: #e8ecf4;
+    --muted: #5a6480; --accent: #3b82f6; --green: #22c55e;
+    --yellow: #eab308; --red: #ef4444; --orange: #f97316;
+    --purple: #a855f7; --cyan: #06b6d4;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+  /* TICKER */
+  .ticker-bar { background:var(--surface); border-bottom:1px solid var(--border); padding:6px 0; overflow:hidden; position:sticky; top:0; z-index:100; }
+  .ticker-inner { display:flex; gap:50px; animation:ticker 35s linear infinite; white-space:nowrap; width:max-content; }
+  .ticker-inner:hover { animation-play-state:paused; }
+  @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  .tick-item { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); display:flex; align-items:center; gap:7px; }
+  .tick-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .tick-ok .tick-dot { background:var(--green); box-shadow:0 0 6px var(--green); }
+  .tick-warn .tick-dot { background:var(--yellow); box-shadow:0 0 6px var(--yellow); }
+  .tick-stop .tick-dot { background:var(--red); box-shadow:0 0 6px var(--red); animation:blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* HEADER */
+  .header { display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--border); background:var(--surface); }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; background:linear-gradient(135deg,var(--accent),var(--cyan)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .logo-sub { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; }
+  .clock { font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--accent); letter-spacing:2px; text-align:right; }
+  .date-s { font-size:10px; color:var(--muted); text-align:right; font-family:'JetBrains Mono',monospace; text-transform:uppercase; }
+
+  /* BUTTONS */
+  .btn { padding:10px 18px; border-radius:8px; border:1px solid var(--border2); background:var(--surface2); color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px; }
+  .btn:hover { background:var(--border2); border-color:var(--accent); color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.primary:hover { background:#2563eb; }
+  .btn.danger { background:transparent; border-color:var(--red); color:var(--red); }
+
+  /* URGENCY */
+  .urg-bar { margin:16px 24px 0; background:linear-gradient(135deg,#1a0a0a,#200f0f); border:1px solid #3d1515; border-left:4px solid var(--red); border-radius:8px; padding:14px 18px; cursor:pointer; }
+  .urg-bar:hover { background:#1f0c0c; }
+  .urg-top { display:flex; align-items:center; gap:10px; }
+  .urg-lbl { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; color:var(--red); flex-shrink:0; }
+  .urg-empty { font-size:13px; color:var(--muted); font-style:italic; }
+  .urg-list { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+  .urg-row { display:flex; gap:10px; background:rgba(239,68,68,0.06); border-radius:6px; padding:8px 12px; border:1px solid rgba(239,68,68,0.15); }
+  .urg-area { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--red); text-transform:uppercase; min-width:80px; flex-shrink:0; padding-top:1px; }
+  .urg-text { font-size:13px; color:#fca5a5; flex:1; }
+
+  /* MAIN */
+  .main { padding:0 24px 60px; }
+  .sec-lbl { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin:20px 0 10px; display:flex; align-items:center; gap:10px; }
+  .sec-lbl::after { content:''; flex:1; height:1px; background:var(--border); }
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+
+  /* WEEK */
+  .week-row { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:4px; }
+  .day-chip { text-align:center; padding:7px 4px; border-radius:6px; background:var(--surface2); border:1px solid var(--border); }
+  .day-chip.today { background:rgba(59,130,246,0.15); border-color:var(--accent); }
+  .day-dn { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-family:'JetBrains Mono',monospace; }
+  .day-dd { font-size:18px; font-weight:500; color:var(--text); line-height:1.3; }
+  .day-chip.today .day-dn,.day-chip.today .day-dd { color:var(--accent); }
+
+  /* CARDS */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; border-top:2px solid var(--card-accent,var(--accent)); position:relative; overflow:hidden; }
+  .card:hover { border-color:var(--border2); }
+  .card.editable { cursor:pointer; border-color:var(--accent) !important; }
+  .card.editable::after { content:'✏ editar'; font-size:9px; font-family:'JetBrains Mono',monospace; color:var(--accent); display:block; text-align:right; margin-top:6px; text-transform:uppercase; letter-spacing:1px; }
+  .card-hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .card-ttl { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:1px; }
+  .card-icon { font-size:18px; }
+  .card-items { display:flex; flex-direction:column; gap:5px; margin-top:2px; }
+  .ci { display:flex; gap:8px; align-items:flex-start; padding:7px 9px; background:var(--surface2); border-radius:6px; border:1px solid var(--border); }
+  .ci-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+  .ci-text { font-size:13px; color:#c8d0e0; flex:1; line-height:1.5; }
+  .ci-tag { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); flex-shrink:0; padding-top:2px; }
+  .card-upd { margin-top:8px; font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+
+  /* BADGES */
+  .badge { display:inline-flex; align-items:center; padding:2px 9px; border-radius:100px; font-size:10px; font-weight:600; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.5px; }
+  .b-green  { background:rgba(34,197,94,0.12);  color:var(--green);  border:1px solid rgba(34,197,94,0.25); }
+  .b-yellow { background:rgba(234,179,8,0.12);  color:var(--yellow); border:1px solid rgba(234,179,8,0.25); }
+  .b-red    { background:rgba(239,68,68,0.12);  color:var(--red);    border:1px solid rgba(239,68,68,0.25); }
+  .b-blue   { background:rgba(59,130,246,0.12); color:var(--accent); border:1px solid rgba(59,130,246,0.25); }
+  .b-gray   { background:rgba(90,100,128,0.15); color:var(--muted);  border:1px solid var(--border); }
+
+  /* PRODUCTION */
+  .prod-line { display:flex; align-items:center; gap:9px; padding:9px 12px; background:var(--surface2); border-radius:6px; border:1px solid var(--border); margin-bottom:6px; }
+  .ldot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .ldot.on    { background:var(--green);  box-shadow:0 0 8px var(--green); }
+  .ldot.maint { background:var(--yellow); box-shadow:0 0 8px var(--yellow); }
+  .ldot.off   { background:var(--red);    box-shadow:0 0 8px var(--red); }
+  .lname  { font-size:13px; font-weight:500; flex:1; }
+  .lclient { font-size:11px; font-family:'JetBrains Mono',monospace; max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lclient.has   { color:var(--cyan); }
+  .lclient.empty { color:var(--muted); font-style:italic; }
+
+  /* OVERLAYS */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:1000; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto; }
+  .overlay.show { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border2); border-radius:14px; padding:24px; width:560px; max-width:100%; position:relative; margin-bottom:20px; }
+  .modal h3 { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1.5px; margin-bottom:16px; padding-right:30px; }
+  .modal-close { position:absolute; top:14px; right:14px; background:transparent; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1; padding:4px 8px; }
+  .modal-close:hover { color:var(--text); }
+  .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; border-top:1px solid var(--border); padding-top:16px; }
+
+  /* FORM FIELDS */
+  .fl { margin-bottom:14px; }
+  .fl label { display:block; font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
+  input[type=text], input[type=password], select {
+    width:100%; background:var(--surface2); border:1px solid var(--border2);
+    border-radius:8px; padding:12px 14px; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:15px; outline:none;
+    transition:border-color 0.2s;
+  }
+  input[type=text]:focus, input[type=password]:focus, select:focus { border-color:var(--accent); }
+  select option { background:#1a1e28; }
+
+  /* ITEM ROWS — large text areas */
+  .items-lbl { font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; font-family:'JetBrains Mono',monospace; }
+  .item-row { background:var(--surface2); border:1px solid var(--border2); border-radius:10px; margin-bottom:10px; overflow:hidden; display:flex; }
+  .item-row-main { flex:1; display:flex; flex-direction:column; }
+  .item-textarea {
+    width:100%; background:transparent; border:none;
+    border-bottom:1px solid var(--border); padding:14px 16px;
+    font-size:15px; color:var(--text); outline:none; resize:vertical;
+    min-height:90px; font-family:'DM Sans',sans-serif; line-height:1.7;
+  }
+  .item-textarea::placeholder { color:var(--muted); }
+  .item-textarea:focus { border-bottom-color:var(--accent); }
+  .item-tag-row { display:flex; align-items:center; gap:8px; padding:8px 16px; }
+  .tag-lbl { font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+  .item-tag-input {
+    flex:1; background:transparent; border:none; border-bottom:1px solid var(--border);
+    border-radius:0; padding:4px 6px; font-size:13px; color:var(--cyan);
+    font-family:'JetBrains Mono',monospace; outline:none;
+  }
+  .item-tag-input::placeholder { color:var(--muted); }
+  .item-tag-input:focus { border-bottom-color:var(--accent); }
+  .rm-col { display:flex; align-items:center; justify-content:center; padding:0 14px; border-left:1px solid var(--border); }
+  .rm-btn { background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:20px; line-height:1; }
+  .rm-btn:hover { color:var(--red); }
+  .add-item-btn { display:flex; align-items:center; justify-content:center; gap:8px; background:transparent; border:1px dashed var(--border2); border-radius:10px; padding:14px; color:var(--muted); font-size:14px; cursor:pointer; width:100%; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
+  .add-item-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* PROD MODAL */
+  .pe-row { display:grid; grid-template-columns:1fr auto 1.2fr; gap:8px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+  .pe-row:last-child { border:none; }
+  .pe-lbl { font-size:13px; font-weight:500; }
+  .pe-row select { padding:8px 10px; font-size:13px; }
+  .pe-row input { padding:8px 10px; font-size:13px; color:var(--cyan); }
+
+  /* FAB */
+  .fab { position:fixed; bottom:20px; right:20px; width:52px; height:52px; background:var(--accent); border:none; border-radius:50%; font-size:22px; cursor:pointer; box-shadow:0 4px 20px rgba(59,130,246,0.4); z-index:500; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+  .fab:hover { transform:scale(1.08); }
+  .fab.on { background:var(--green); box-shadow:0 4px 20px rgba(34,197,94,0.4); }
+
+  .saving { text-align:center; padding:8px; font-size:11px; color:var(--green); font-family:'JetBrains Mono',monospace; display:none; }
+  .sep { height:1px; background:var(--border); margin:10px 0; }
+  ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:var(--bg); } ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:10px; }
+</style>
 </head>
 <body>
-<div id="app">
-  <div class="ticker-bar"><div class="ticker-inner" id="ticker"></div></div>
-  <div class="hdr">
-    <div>
-      <div class="hdr-title">Monitor Operativo <span class="sync-dot syncing" id="syncDot" title="Sincronizando..."></span></div>
-      <div class="hdr-sub">Panel de control · tiempo real</div>
-    </div>
-    <div>
-      <div class="clock" id="clock">00:00:00</div>
-      <div class="date-s" id="dateS"></div>
-    </div>
-  </div>
-  <div class="body">
-    <div id="loadMsg" class="loading">☁️ Sincronizando con la nube...</div>
-    <div id="content" style="display:none">
-      <div class="urg-bar" id="urgBar" onclick="openUrgency()">
-        <div class="urg-top"><span class="urg-lbl">Urgente</span><span id="urgEmpty" class="urg-empty">Sin alertas activas — click para agregar</span></div>
-        <div class="urg-items" id="urgItems"></div>
-      </div>
-      <div class="section-lbl">Semana actual</div>
-      <div class="week-row" id="weekRow"></div>
-      <div class="section-lbl">Producción</div>
-      <div class="card" id="prodCard" style="margin-bottom:12px">
-        <div class="card-hdr">
-          <div class="card-ttl">Líneas de producción</div>
-          <div style="display:flex;gap:8px;align-items:center"><span class="badge" id="prodBadge">—</span><span class="card-icon">🏭</span></div>
-        </div>
-        <div id="prodLines"></div>
-        <div id="prodNotes" style="font-size:12px;color:var(--color-text-tertiary);margin-top:6px"></div>
-        <div class="card-upd" id="prodUpd"></div>
-      </div>
-      <div class="section-lbl">Operaciones &amp; finanzas</div>
-      <div class="cards-grid" id="opsGrid"></div>
-      <div class="section-lbl">Implementaciones</div>
-      <div class="cards-grid" id="implGrid"></div>
-    </div>
-    <div class="saving-bar" id="savingBar">☁️ Guardando en la nube...</div>
-  </div>
-</div>
 
 <!-- AUTH -->
 <div class="overlay" id="authOv">
-  <div class="modal" style="width:320px;text-align:center">
-    <div style="font-size:28px;margin-bottom:10px">🔐</div>
-    <h3 style="text-align:center">Acceso editor</h3>
-    <div class="fl"><input type="password" id="authInp" placeholder="Contraseña..." onkeydown="if(event.key==='Enter')doAuth()"></div>
-    <button onclick="doAuth()" style="width:100%;margin-bottom:7px">Ingresar</button>
-    <button onclick="closeOv('authOv')" style="width:100%">Cancelar</button>
-    <div id="authErr" style="color:var(--color-text-danger);font-size:12px;margin-top:8px;display:none">Contraseña incorrecta</div>
+  <div class="modal" style="width:360px;text-align:center;margin-top:60px">
+    <div style="font-size:36px;margin-bottom:12px">🔐</div>
+    <h3 style="text-align:center;margin-bottom:6px">Acceso editor</h3>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:20px">Solo tú puedes editar este tablero</p>
+    <div class="fl">
+      <input type="password" id="authInp" placeholder="Contraseña..." onkeydown="if(event.key==='Enter')doAuth()" style="text-align:center;font-size:18px;letter-spacing:3px;padding:14px;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn primary" onclick="doAuth()" style="width:100%;justify-content:center;font-size:16px;padding:14px">Ingresar</button>
+      <button class="btn" onclick="closeOv('authOv')" style="width:100%;justify-content:center">Cancelar</button>
+    </div>
+    <div id="authErr" style="color:var(--red);font-size:13px;margin-top:12px;padding:10px;background:rgba(239,68,68,0.1);border-radius:8px;display:none">
+      Contraseña incorrecta. Intenta de nuevo.
+    </div>
   </div>
 </div>
 
@@ -195,12 +192,13 @@
   <div class="modal">
     <button class="modal-close" onclick="closeOv('urgOv')">✕</button>
     <h3>Alertas urgentes</h3>
-    <p style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:14px">Puedes agregar varias. Todas aparecen en la barra roja.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Agrega una o varias alertas. Todas aparecen en la barra roja superior.</p>
     <div id="urgEditor"></div>
-    <button class="add-btn" onclick="addUrgItem()">+ Agregar alerta</button>
+    <button class="add-item-btn" onclick="addUrgItem()">+ Agregar alerta</button>
     <div class="modal-actions">
-      <button onclick="clearUrg()" style="color:var(--color-text-danger)">Limpiar todo</button>
-      <button onclick="saveUrg()">Guardar</button>
+      <button class="btn danger" onclick="clearUrg()" style="margin-right:auto">Limpiar todo</button>
+      <button class="btn" onclick="closeOv('urgOv')">Cancelar</button>
+      <button class="btn primary" onclick="saveUrg()">Guardar</button>
     </div>
   </div>
 </div>
@@ -212,8 +210,8 @@
     <h3 id="cardOvTitle">Editar</h3>
     <div id="cardOvBody"></div>
     <div class="modal-actions">
-      <button onclick="closeOv('cardOv')">Cancelar</button>
-      <button onclick="saveCardModal()">Guardar</button>
+      <button class="btn" onclick="closeOv('cardOv')">Cancelar</button>
+      <button class="btn primary" onclick="saveCardModal()">Guardar</button>
     </div>
   </div>
 </div>
@@ -223,115 +221,139 @@
   <div class="modal">
     <button class="modal-close" onclick="closeOv('prodOv')">✕</button>
     <h3>Editar producción</h3>
-    <div style="font-size:11px;color:var(--color-text-tertiary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Estado · máquina · cliente en turno</div>
+    <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Estado · Máquina · Cliente en turno</div>
     <div id="prodEditor"></div>
-    <div class="fl" style="margin-top:12px">
-      <label>Notas generales</label>
-      <textarea id="prodNotesIn" style="min-height:50px"></textarea>
+    <div class="fl" style="margin-top:14px">
+      <label>Notas generales del turno</label>
+      <textarea id="prodNotesIn" style="width:100%;min-height:80px;padding:12px 14px;font-size:14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Observaciones generales del turno..."></textarea>
     </div>
     <div class="modal-actions">
-      <button onclick="closeOv('prodOv')">Cancelar</button>
-      <button onclick="saveProd()">Guardar</button>
+      <button class="btn" onclick="closeOv('prodOv')">Cancelar</button>
+      <button class="btn primary" onclick="saveProd()">Guardar</button>
     </div>
   </div>
 </div>
 
-<button class="fab" id="fab" onclick="toggleEdit()">✏️</button>
+<!-- TICKER -->
+<div class="ticker-bar"><div class="ticker-inner" id="ticker"></div></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="logo">Monitor Operativo</div>
+    <div class="logo-sub">Panel de control · tiempo real</div>
+  </div>
+  <div>
+    <div class="clock" id="clock">00:00:00</div>
+    <div class="date-s" id="dateS"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="urg-bar" id="urgBar" onclick="openUrgency()">
+    <div class="urg-top">
+      <span class="urg-lbl">🚨 Urgente</span>
+      <span id="urgEmpty" class="urg-empty">Sin alertas activas — click para agregar</span>
+    </div>
+    <div class="urg-list" id="urgList"></div>
+  </div>
+
+  <div class="sec-lbl" style="margin-top:20px">Semana actual</div>
+  <div class="week-row" id="weekRow"></div>
+
+  <div class="sec-lbl">Producción</div>
+  <div class="card" id="prodCard" style="margin-bottom:12px;--card-accent:var(--green)">
+    <div class="card-hdr">
+      <div class="card-ttl">Líneas de producción</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge" id="prodBadge">—</span>
+        <span class="card-icon">🏭</span>
+      </div>
+    </div>
+    <div id="prodLines"></div>
+    <div id="prodNotes" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+    <div class="card-upd" id="prodUpd"></div>
+  </div>
+
+  <div class="sec-lbl">Operaciones &amp; finanzas</div>
+  <div class="cards-grid" id="opsGrid"></div>
+
+  <div class="sec-lbl">Implementaciones</div>
+  <div class="cards-grid" id="implGrid"></div>
+
+  <div class="saving" id="savingBar">✓ Guardado</div>
+</div>
+
+<button class="fab" id="fab" onclick="toggleEdit()" title="Editar tablero">✏️</button>
 
 <script>
-const PASS       = "Admin2024";
-const BIN_ID     = "69f61487856a6821899aadfa";
-const MASTER_KEY = "$2a$10$8sKEFlgwgtFnLjyXoK2yj.LIGzH4GlvJO1edCtrkd6wW7iN7jOUYS";
-const API_URL    = "https://api.jsonbin.io/v3/b/" + BIN_ID;
+// ── CONTRASEÑA (sin importar mayúsculas) ──
+const PASS = "centrus2024";
+const KEY  = "monitor_ops_v1";
 
 let editing=false, S=null, urgDraft=[], cardDraft=[], curCard=null;
 
 const AREAS=['Producción','Compras','AVATTIA','ContPAQi','C×Cobrar','C×Pagar','Pagos','General'];
 const SMAP={
-  ok:      ['b-green','✓ OK'],
+  ok:      ['b-green', '✓ OK'],
   warn:    ['b-yellow','⚠ Atención'],
-  alert:   ['b-red','🚨 Urgente'],
-  progress:['b-info','⟳ En proceso'],
-  paused:  ['b-gray','⏸ Pausado'],
+  alert:   ['b-red',  '🚨 Urgente'],
+  progress:['b-blue', '⟳ En proceso'],
+  paused:  ['b-gray', '⏸ Pausado'],
   done:    ['b-green','✓ Completado'],
 };
 
 const DEFAULT={
   urgencyItems:[],
   lines:[
-    {id:"c1",name:"Cortadora 1",status:"on",client:""},
-    {id:"c2",name:"Cortadora 2",status:"on",client:""},
-    {id:"tb",name:"Tubos de Cartón",status:"on",client:""},
-    {id:"e1",name:"Esquineros Línea 1",status:"on",client:""},
-    {id:"e2",name:"Esquineros Línea 2",status:"on",client:""},
-    {id:"e3",name:"Esquineros Línea 3",status:"off",client:""},
-    {id:"cu",name:"Máquina Cubeta",status:"on",client:""},
-    {id:"tp",name:"Máquina Tapa",status:"on",client:""},
+    {id:"c1",name:"Cortadora 1",        status:"on", client:""},
+    {id:"c2",name:"Cortadora 2",        status:"on", client:""},
+    {id:"tb",name:"Tubos de Cartón",    status:"on", client:""},
+    {id:"e1",name:"Esquineros Línea 1", status:"on", client:""},
+    {id:"e2",name:"Esquineros Línea 2", status:"on", client:""},
+    {id:"e3",name:"Esquineros Línea 3", status:"off",client:""},
+    {id:"cu",name:"Máquina Cubeta",     status:"on", client:""},
+    {id:"tp",name:"Máquina Tapa",       status:"on", client:""},
   ],
   prodNotes:"",prodUpdated:"",
   ops:[
-    {id:"compras",title:"Compras",icon:"🛒",accent:"#0891b2",status:"ok",items:[{text:"Sin pedidos urgentes.",tag:""}],updated:""},
-    {id:"cxc",title:"Cuentas por cobrar",icon:"💰",accent:"#16a34a",status:"warn",items:[{text:"3 facturas próximas a vencer.",tag:"Esta semana"}],updated:""},
-    {id:"cxp",title:"Cuentas por pagar",icon:"📤",accent:"#ea580c",status:"ok",items:[{text:"Pagos del mes al corriente.",tag:""}],updated:""},
-    {id:"pagos",title:"Pagos de la semana",icon:"💳",accent:"#9333ea",status:"ok",items:[{text:"Nómina procesada.",tag:"Lun"},{text:"Proveedores pagados.",tag:"Mar"}],updated:""},
+    {id:"compras",title:"Compras",           icon:"🛒",accent:"#0891b2",status:"ok",      items:[{text:"Sin pedidos urgentes.",tag:""}],updated:""},
+    {id:"cxc",   title:"Cuentas por cobrar", icon:"💰",accent:"#16a34a",status:"warn",    items:[{text:"3 facturas próximas a vencer.",tag:"Esta semana"}],updated:""},
+    {id:"cxp",   title:"Cuentas por pagar",  icon:"📤",accent:"#ea580c",status:"ok",      items:[{text:"Pagos del mes al corriente.",tag:""}],updated:""},
+    {id:"pagos", title:"Pagos de la semana", icon:"💳",accent:"#9333ea",status:"ok",      items:[{text:"Nómina procesada.",tag:"Lun"},{text:"Proveedores pagados.",tag:"Mar"}],updated:""},
   ],
   impl:[
-    {id:"avattia",title:"AVATTIA",icon:"🤖",accent:"#2563eb",status:"progress",items:[{text:"Inventarios al 65%.",tag:"Inv."},{text:"Reunión viernes 10am.",tag:"Pendiente"}],updated:""},
-    {id:"contpaqi",title:"ContPAQi",icon:"📊",accent:"#9333ea",status:"progress",items:[{text:"Catálogos migrados.",tag:"✓"},{text:"Pruebas de facturación en curso.",tag:"En curso"}],updated:""},
+    {id:"avattia", title:"AVATTIA",  icon:"🤖",accent:"#2563eb",status:"progress",items:[{text:"Inventarios al 65%.",tag:"Inv."},{text:"Reunión viernes 10am.",tag:"Pendiente"}],updated:""},
+    {id:"contpaqi",title:"ContPAQi", icon:"📊",accent:"#9333ea",status:"progress",items:[{text:"Catálogos migrados.",tag:"✓"},{text:"Pruebas de facturación en curso.",tag:"En curso"}],updated:""},
   ],
 };
 
-function setSyncDot(state){
-  const d=document.getElementById('syncDot');
-  d.className='sync-dot'+(state==='syncing'?' syncing':state==='error'?' error':'');
-  d.title=state==='ok'?'Sincronizado ☁️':state==='syncing'?'Sincronizando...':'Sin conexión ❌';
+// ── STORAGE (localStorage fallback) ──
+async function load(){
+  try {
+    if(window.storage){
+      const r=await window.storage.get(KEY);
+      S=r?JSON.parse(r.value):JSON.parse(JSON.stringify(DEFAULT));
+    } else {
+      const r=localStorage.getItem(KEY);
+      S=r?JSON.parse(r):JSON.parse(JSON.stringify(DEFAULT));
+    }
+  } catch(e){ S=JSON.parse(JSON.stringify(DEFAULT)); }
+  renderAll();
 }
 
-async function cloudLoad(){
-  setSyncDot('syncing');
-  try{
-    const r=await fetch(API_URL+'/latest',{headers:{'X-Master-Key':MASTER_KEY}});
-    if(!r.ok) throw new Error('fetch failed');
-    const j=await r.json();
-    S=j.record;
-    if(!S.ops)   S.ops=DEFAULT.ops;
-    if(!S.impl)  S.impl=DEFAULT.impl;
-    if(!S.lines) S.lines=DEFAULT.lines;
-    setSyncDot('ok');
-  }catch(e){
-    console.warn('Cloud load error:',e);
-    if(!S) S=JSON.parse(JSON.stringify(DEFAULT));
-    setSyncDot('error');
-  }
-}
-
-async function cloudSave(){
+async function persist(){
+  try {
+    if(window.storage) await window.storage.set(KEY,JSON.stringify(S));
+    else localStorage.setItem(KEY,JSON.stringify(S));
+  } catch(e){}
   const bar=document.getElementById('savingBar');
   bar.style.display='block';
-  setSyncDot('syncing');
-  try{
-    const r=await fetch(API_URL,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},
-      body:JSON.stringify(S)
-    });
-    if(!r.ok) throw new Error('save failed');
-    setSyncDot('ok');
-  }catch(e){
-    console.error('Cloud save error:',e);
-    setSyncDot('error');
-  }
-  setTimeout(()=>{bar.style.display='none';},1200);
+  setTimeout(()=>{bar.style.display='none';},2000);
 }
 
-async function load(){
-  await cloudLoad();
-  document.getElementById('loadMsg').style.display='none';
-  document.getElementById('content').style.display='block';
-  renderAll();
-  setInterval(async()=>{ if(!editing){ await cloudLoad(); renderAll(); } },60000);
-}
-
+// ── CLOCK ──
 function tick(){
   const n=new Date();
   document.getElementById('clock').textContent=n.toLocaleTimeString('es-MX',{hour12:false});
@@ -341,6 +363,7 @@ function tick(){
 }
 setInterval(tick,1000); tick();
 
+// ── WEEK ──
 function buildWeek(){
   const el=document.getElementById('weekRow'); el.innerHTML='';
   const now=new Date(), mon=new Date(now);
@@ -356,6 +379,7 @@ function buildWeek(){
   });
 }
 
+// ── TICKER ──
 function buildTicker(){
   const items=S.lines.map(l=>({lbl:l.name+(l.client?' · '+l.client:''),cls:l.status==='on'?'tick-ok':l.status==='maint'?'tick-warn':'tick-stop'}));
   (S.urgencyItems||[]).forEach(u=>items.push({lbl:(u.area?u.area+': ':'')+u.text,cls:'tick-stop'}));
@@ -363,144 +387,196 @@ function buildTicker(){
   document.getElementById('ticker').innerHTML=html;
 }
 
+// ── URGENCY ──
 function renderUrgency(){
   const list=S.urgencyItems||[];
   document.getElementById('urgEmpty').style.display=list.length?'none':'';
-  document.getElementById('urgItems').innerHTML=list.map(u=>`<div class="urg-item"><span class="urg-area">${u.area||'general'}</span><span class="urg-text">${u.text}</span></div>`).join('');
+  document.getElementById('urgList').innerHTML=list.map(u=>`
+    <div class="urg-row"><span class="urg-area">${u.area||'general'}</span><span class="urg-text">${u.text}</span></div>`).join('');
 }
-
-function openUrgency(){ if(!editing) return; urgDraft=JSON.parse(JSON.stringify(S.urgencyItems||[])); if(!urgDraft.length) urgDraft.push({text:'',area:''}); renderUrgEd(); showOv('urgOv'); }
+function openUrgency(){
+  if(!editing)return;
+  urgDraft=JSON.parse(JSON.stringify(S.urgencyItems||[]));
+  if(!urgDraft.length)urgDraft.push({text:'',area:''});
+  renderUrgEd(); showOv('urgOv');
+}
 function renderUrgEd(){
   document.getElementById('urgEditor').innerHTML=urgDraft.map((u,i)=>`
     <div class="item-row">
-      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
-        <textarea placeholder="Descripción de la alerta..." oninput="urgDraft[${i}].text=this.value">${u.text}</textarea>
-        <select onchange="urgDraft[${i}].area=this.value" style="font-size:12px">
-          <option value="" ${!u.area?'selected':''}>— Sin área —</option>
-          ${AREAS.map(a=>`<option value="${a}" ${u.area===a?'selected':''}>${a}</option>`).join('')}
-        </select>
+      <div class="item-row-main">
+        <textarea class="item-textarea" placeholder="Describe la situación urgente con detalle..." oninput="urgDraft[${i}].text=this.value">${u.text}</textarea>
+        <div class="item-tag-row">
+          <span class="tag-lbl">Área:</span>
+          <select onchange="urgDraft[${i}].area=this.value" style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:4px 6px;font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;outline:none;">
+            <option value="" ${!u.area?'selected':''}>— Sin área —</option>
+            ${AREAS.map(a=>`<option value="${a}" ${u.area===a?'selected':''}>${a}</option>`).join('')}
+          </select>
+        </div>
       </div>
-      <button class="rm-btn" onclick="rmUrgItem(${i})">✕</button>
+      <div class="rm-col"><button class="rm-btn" onclick="rmUrgItem(${i})">✕</button></div>
     </div>`).join('');
 }
-function addUrgItem(){ urgDraft.push({text:'',area:''}); renderUrgEd(); }
-function rmUrgItem(i){ urgDraft.splice(i,1); renderUrgEd(); }
-async function saveUrg(){ S.urgencyItems=urgDraft.filter(u=>u.text.trim()); await cloudSave(); renderAll(); closeOv('urgOv'); }
-async function clearUrg(){ S.urgencyItems=[]; await cloudSave(); renderAll(); closeOv('urgOv'); }
+function addUrgItem(){urgDraft.push({text:'',area:''});renderUrgEd();}
+function rmUrgItem(i){urgDraft.splice(i,1);if(!urgDraft.length)urgDraft.push({text:'',area:''});renderUrgEd();}
+async function saveUrg(){S.urgencyItems=urgDraft.filter(u=>u.text.trim());await persist();renderAll();closeOv('urgOv');}
+async function clearUrg(){S.urgencyItems=[];await persist();renderAll();closeOv('urgOv');}
 
+// ── PRODUCTION ──
 function renderLines(){
-  const on=S.lines.filter(l=>l.status==='on').length, total=S.lines.length;
+  const on=S.lines.filter(l=>l.status==='on').length,total=S.lines.length;
   const badge=document.getElementById('prodBadge');
   badge.textContent=`${on}/${total} activas`;
   badge.className='badge '+(on===total?'b-green':on>=total/2?'b-yellow':'b-red');
   document.getElementById('prodLines').innerHTML=S.lines.map(l=>{
     const stB=l.status==='on'?'<span class="badge b-green">corriendo</span>':l.status==='maint'?'<span class="badge b-yellow">mantenimiento</span>':'<span class="badge b-red">detenida</span>';
-    const cl=l.client?`<span class="lclient">${l.client}</span>`:`<span class="lclient empty">sin cliente</span>`;
+    const cl=l.client?`<span class="lclient has">👤 ${l.client}</span>`:`<span class="lclient empty">sin cliente</span>`;
     return `<div class="prod-line"><span class="ldot ${l.status==='on'?'on':l.status==='maint'?'maint':'off'}"></span><span class="lname">${l.name}</span>${cl}${stB}</div>`;
   }).join('');
   document.getElementById('prodNotes').textContent=S.prodNotes||'';
   document.getElementById('prodUpd').textContent=S.prodUpdated?'↻ '+S.prodUpdated:'';
 }
-
 function openProd(){
   document.getElementById('prodNotesIn').value=S.prodNotes||'';
   document.getElementById('prodEditor').innerHTML=S.lines.map(l=>`
     <div class="pe-row">
       <div class="pe-lbl">${l.name}</div>
-      <select data-lid="${l.id}" style="font-size:12px">
-        <option value="on" ${l.status==='on'?'selected':''}>Corriendo</option>
-        <option value="maint" ${l.status==='maint'?'selected':''}>Mantenimiento</option>
-        <option value="off" ${l.status==='off'?'selected':''}>Detenida</option>
+      <select data-lid="${l.id}">
+        <option value="on"    ${l.status==='on'   ?'selected':''}>✅ Corriendo</option>
+        <option value="maint" ${l.status==='maint'?'selected':''}>⚠️ Mantenimiento</option>
+        <option value="off"   ${l.status==='off'  ?'selected':''}>🔴 Detenida</option>
       </select>
-      <input type="text" data-cid="${l.id}" value="${l.client}" placeholder="Cliente en turno..." style="font-size:12px;color:var(--color-text-info)">
+      <input type="text" data-cid="${l.id}" value="${l.client}" placeholder="Cliente en turno...">
     </div>`).join('');
   showOv('prodOv');
 }
 async function saveProd(){
-  document.querySelectorAll('[data-lid]').forEach(sel=>{ const l=S.lines.find(x=>x.id===sel.dataset.lid); if(l) l.status=sel.value; });
-  document.querySelectorAll('[data-cid]').forEach(inp=>{ const l=S.lines.find(x=>x.id===inp.dataset.cid); if(l) l.client=inp.value.trim(); });
+  document.querySelectorAll('[data-lid]').forEach(sel=>{const l=S.lines.find(x=>x.id===sel.dataset.lid);if(l)l.status=sel.value;});
+  document.querySelectorAll('[data-cid]').forEach(inp=>{const l=S.lines.find(x=>x.id===inp.dataset.cid);if(l)l.client=inp.value.trim();});
   S.prodNotes=document.getElementById('prodNotesIn').value;
   S.prodUpdated=new Date().toLocaleString('es-MX',{hour12:false,dateStyle:'short',timeStyle:'short'});
-  await cloudSave(); renderAll(); closeOv('prodOv');
+  await persist();renderAll();closeOv('prodOv');
 }
 
+// ── CARDS ──
 function renderCard(c){
   const [bc,bl]=SMAP[c.status]||['b-gray',c.status];
-  const items=(c.items||[]).map(it=>`<div class="ci"><div class="ci-dot" style="background:${c.accent}"></div><div class="ci-text">${it.text}</div>${it.tag?`<div class="ci-tag">${it.tag}</div>`:''}</div>`).join('');
-  const ed=editing?`onclick="openCard('${c.id}')" class="card editable"`:`class="card"`;
-  return `<div ${ed} id="card-${c.id}" style="--card-accent:${c.accent}"><div class="card-hdr"><div class="card-ttl">${c.title}</div><div style="display:flex;gap:8px;align-items:center"><span class="badge ${bc}">${bl}</span><span class="card-icon">${c.icon}</span></div></div><div class="card-items">${items}</div>${c.updated?`<div class="card-upd">↻ ${c.updated}</div>`:''}</div>`;
+  const items=(c.items||[]).map(it=>`
+    <div class="ci">
+      <div class="ci-dot" style="background:${c.accent}"></div>
+      <div class="ci-text">${it.text}</div>
+      ${it.tag?`<div class="ci-tag">${it.tag}</div>`:''}
+    </div>`).join('');
+  const ea=editing?`onclick="openCard('${c.id}')"`:'' ;
+  const ec=editing?'card editable':'card';
+  return `<div class="${ec}" id="card-${c.id}" style="--card-accent:${c.accent}" ${ea}>
+    <div class="card-hdr">
+      <div class="card-ttl">${c.title}</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="badge ${bc}">${bl}</span><span class="card-icon">${c.icon}</span></div>
+    </div>
+    <div class="card-items">${items}</div>
+    ${c.updated?`<div class="card-upd">↻ ${c.updated}</div>`:''}
+  </div>`;
 }
-
 function renderCards(){
   document.getElementById('opsGrid').innerHTML=S.ops.map(renderCard).join('');
   document.getElementById('implGrid').innerHTML=S.impl.map(renderCard).join('');
   const pc=document.getElementById('prodCard');
-  if(editing){ pc.classList.add('editable'); pc.onclick=openProd; }
-  else{ pc.classList.remove('editable'); pc.onclick=null; }
+  if(editing){pc.classList.add('editable');pc.onclick=openProd;}
+  else{pc.classList.remove('editable');pc.onclick=null;}
 }
 
 function openCard(id){
-  const all=[...S.ops,...S.impl], card=all.find(c=>c.id===id); if(!card) return;
-  curCard=id; cardDraft=JSON.parse(JSON.stringify(card.items||[]));
-  if(!cardDraft.length) cardDraft.push({text:'',tag:''});
+  const all=[...S.ops,...S.impl];
+  const card=all.find(c=>c.id===id);if(!card)return;
+  curCard=id;
+  cardDraft=JSON.parse(JSON.stringify(card.items||[]));
+  if(!cardDraft.length)cardDraft.push({text:'',tag:''});
   document.getElementById('cardOvTitle').textContent=card.icon+' '+card.title;
   document.getElementById('cardOvBody').innerHTML=`
-    <div class="fl"><label>Estado</label>
-      <select id="cv-status" style="font-size:13px">
-        <option value="ok" ${card.status==='ok'?'selected':''}>OK / Al día</option>
-        <option value="warn" ${card.status==='warn'?'selected':''}>Atención / Seguimiento</option>
-        <option value="alert" ${card.status==='alert'?'selected':''}>Urgente / Alerta</option>
-        <option value="progress" ${card.status==='progress'?'selected':''}>En proceso</option>
-        <option value="paused" ${card.status==='paused'?'selected':''}>Pausado</option>
-        <option value="done" ${card.status==='done'?'selected':''}>Completado</option>
+    <div class="fl">
+      <label>Estado</label>
+      <select id="cv-status">
+        <option value="ok"       ${card.status==='ok'      ?'selected':''}>✅ OK / Al día</option>
+        <option value="warn"     ${card.status==='warn'    ?'selected':''}>⚠️ Atención / Seguimiento</option>
+        <option value="alert"    ${card.status==='alert'   ?'selected':''}>🚨 Urgente / Alerta</option>
+        <option value="progress" ${card.status==='progress'?'selected':''}>⟳ En proceso</option>
+        <option value="paused"   ${card.status==='paused'  ?'selected':''}>⏸ Pausado</option>
+        <option value="done"     ${card.status==='done'    ?'selected':''}>✓ Completado</option>
       </select>
     </div>
-    <div style="font-size:11px;color:var(--color-text-tertiary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Puntos / acciones</div>
+    <div class="items-lbl">Puntos / acciones — puedes agregar varios</div>
     <div id="cardItemsEd"></div>
-    <button class="add-btn" onclick="addCardItem()">+ Agregar punto</button>
-    <div class="fl" style="margin-top:12px"><label>Última actualización</label>
-      <input type="text" id="cv-upd" value="${card.updated}" placeholder="Ej: Hoy 14:30 · Carlos">
+    <button class="add-item-btn" onclick="addCardItem()">+ Agregar punto</button>
+    <div class="fl" style="margin-top:14px">
+      <label>Última actualización</label>
+      <input type="text" id="cv-upd" value="${card.updated}" placeholder="Ej: Hoy 14:30 · Responsable">
     </div>`;
-  renderCardItemsEd(); showOv('cardOv');
+  renderCardItemsEd();showOv('cardOv');
 }
 function renderCardItemsEd(){
   document.getElementById('cardItemsEd').innerHTML=cardDraft.map((it,i)=>`
     <div class="item-row">
-      <textarea placeholder="Descripción..." oninput="cardDraft[${i}].text=this.value">${it.text}</textarea>
-      <input class="item-tag" type="text" placeholder="Etiqueta" value="${it.tag}" oninput="cardDraft[${i}].tag=this.value">
-      <button class="rm-btn" onclick="rmCardItem(${i})">✕</button>
+      <div class="item-row-main">
+        <textarea class="item-textarea"
+          placeholder="Escribe aquí el punto o acción con todo el detalle que necesites. Puedes escribir varias líneas."
+          oninput="cardDraft[${i}].text=this.value">${it.text}</textarea>
+        <div class="item-tag-row">
+          <span class="tag-lbl">Etiqueta:</span>
+          <input class="item-tag-input" type="text" placeholder="Ej: Urgente, Lunes, ✓" value="${it.tag}" oninput="cardDraft[${i}].tag=this.value">
+        </div>
+      </div>
+      <div class="rm-col"><button class="rm-btn" onclick="rmCardItem(${i})">✕</button></div>
     </div>`).join('');
 }
-function addCardItem(){ cardDraft.push({text:'',tag:''}); renderCardItemsEd(); }
-function rmCardItem(i){ cardDraft.splice(i,1); if(!cardDraft.length) cardDraft.push({text:'',tag:''}); renderCardItemsEd(); }
+function addCardItem(){cardDraft.push({text:'',tag:''});renderCardItemsEd();}
+function rmCardItem(i){cardDraft.splice(i,1);if(!cardDraft.length)cardDraft.push({text:'',tag:''});renderCardItemsEd();}
 async function saveCardModal(){
-  const all=[...S.ops,...S.impl], card=all.find(c=>c.id===curCard); if(!card) return;
+  const all=[...S.ops,...S.impl];
+  const card=all.find(c=>c.id===curCard);if(!card)return;
   card.status=document.getElementById('cv-status').value;
   card.items=cardDraft.filter(it=>it.text.trim());
-  if(!card.items.length) card.items=[{text:'—',tag:''}];
+  if(!card.items.length)card.items=[{text:'—',tag:''}];
   const upd=document.getElementById('cv-upd').value.trim();
   card.updated=upd||new Date().toLocaleString('es-MX',{hour12:false,dateStyle:'short',timeStyle:'short'});
-  await cloudSave(); renderAll(); closeOv('cardOv');
+  await persist();renderAll();closeOv('cardOv');
 }
 
+// ── AUTH ──
 function toggleEdit(){
-  if(editing){ editing=false; document.getElementById('fab').textContent='✏️'; document.getElementById('fab').classList.remove('on'); renderAll(); }
-  else{ showOv('authOv'); setTimeout(()=>document.getElementById('authInp').focus(),100); }
+  if(editing){
+    editing=false;
+    document.getElementById('fab').textContent='✏️';
+    document.getElementById('fab').classList.remove('on');
+    renderAll();
+  } else {
+    document.getElementById('authInp').value='';
+    document.getElementById('authErr').style.display='none';
+    showOv('authOv');
+    setTimeout(()=>document.getElementById('authInp').focus(),200);
+  }
 }
 function doAuth(){
-  if(document.getElementById('authInp').value===PASS){
-    editing=true; document.getElementById('fab').textContent='✅'; document.getElementById('fab').classList.add('on');
-    closeOv('authOv'); document.getElementById('authInp').value=''; document.getElementById('authErr').style.display='none'; renderAll();
-  } else { document.getElementById('authErr').style.display='block'; document.getElementById('authInp').value=''; }
+  const val=document.getElementById('authInp').value.trim().toLowerCase();
+  if(val===PASS.toLowerCase()){
+    editing=true;
+    document.getElementById('fab').textContent='✅';
+    document.getElementById('fab').classList.add('on');
+    closeOv('authOv');
+    renderAll();
+  } else {
+    document.getElementById('authErr').style.display='block';
+    document.getElementById('authInp').value='';
+    document.getElementById('authInp').focus();
+  }
 }
 
-function showOv(id){ document.getElementById(id).classList.add('show'); }
-function closeOv(id){ document.getElementById(id).classList.remove('show'); }
+function showOv(id){document.getElementById(id).classList.add('show');}
+function closeOv(id){document.getElementById(id).classList.remove('show');}
 ['authOv','urgOv','cardOv','prodOv'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',e=>{ if(e.target.id===id) closeOv(id); });
+  document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)closeOv(id);});
 });
 
-function renderAll(){ buildWeek(); buildTicker(); renderLines(); renderCards(); renderUrgency(); }
+function renderAll(){buildWeek();buildTicker();renderLines();renderCards();renderUrgency();}
 load();
 </script>
 </body>
