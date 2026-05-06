@@ -117,10 +117,10 @@
   .fab{position:fixed;bottom:20px;right:20px;width:52px;height:52px;background:var(--accent);border:none;border-radius:50%;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(59,130,246,0.4);z-index:500;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
   .fab:hover{transform:scale(1.08);}
   .fab.on{background:var(--green);box-shadow:0 4px 20px rgba(34,197,94,0.4);}
-  .fab-backup{position:fixed;bottom:82px;right:20px;width:42px;height:42px;background:var(--surface2);border:1px solid var(--border2);border-radius:50%;font-size:17px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.3);z-index:500;display:none;align-items:center;justify-content:center;transition:all 0.2s;}
-  .fab-backup:hover{background:var(--border2);border-color:var(--green);}
-  .fab-restore{position:fixed;bottom:134px;right:20px;width:42px;height:42px;background:var(--surface2);border:1px solid var(--border2);border-radius:50%;font-size:17px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.3);z-index:500;display:none;align-items:center;justify-content:center;transition:all 0.2s;}
-  .fab-restore:hover{background:var(--border2);border-color:var(--yellow);}
+  .fab2{position:fixed;right:20px;width:42px;height:42px;background:var(--surface2);border:1px solid var(--border2);border-radius:50%;font-size:17px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.3);z-index:500;display:none;align-items:center;justify-content:center;transition:all 0.2s;}
+  .fab2:hover{background:var(--border2);}
+  #fabBackup{bottom:82px;}
+  #fabRestore{bottom:134px;}
   .loading{text-align:center;padding:60px 20px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:13px;}
   ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;}
 </style>
@@ -239,297 +239,382 @@
 </div>
 
 <button class="fab" id="fab" onclick="toggleEdit()" title="Editar tablero">✏️</button>
-<button class="fab-backup" id="fabBackup" onclick="exportBackup()" title="Descargar respaldo">💾</button>
-<button class="fab-restore" id="fabRestore" onclick="document.getElementById('restoreInput').click()" title="Restaurar respaldo">📂</button>
+<button class="fab2" id="fabBackup" onclick="exportBackup()" title="Descargar respaldo 💾">💾</button>
+<button class="fab2" id="fabRestore" onclick="document.getElementById('restoreInput').click()" title="Restaurar respaldo 📂">📂</button>
 <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="importBackup(event)">
 
 <script>
-const BIN_ID  = "69fa626caaba8821977631cb";
-const API_KEY = "$2a$10$RIPy1ZiYPUvN15TwGQtbzObpvAoA3BwBKUKnavSdbXmQEQGP4pukK";
-const BIN_URL = "https://api.jsonbin.io/v3/b/"+BIN_ID;
-const PASS    = "centrus2024";
+var BIN_ID  = "69fa626caaba8821977631cb";
+var API_KEY = "$2a$10$RIPy1ZiYPUvN15TwGQtbzObpvAoA3BwBKUKnavSdbXmQEQGP4pukK";
+var BIN_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
+var PASS    = "centrus2024";
 
-let editing=false,S=null,urgDraft=[],cardDraft=[],curCard=null;
+var editing = false;
+var S = null;
+var urgDraft = [];
+var cardDraft = [];
+var curCard = null;
 
-const AREAS=['Producción','Compras','AVATTIA','ContPAQi','C×Cobrar','C×Pagar','Pagos','General'];
-const SMAP={ok:['b-green','✓ OK'],warn:['b-yellow','⚠ Atención'],alert:['b-red','🚨 Urgente'],progress:['b-blue','⟳ En proceso'],paused:['b-gray','⏸ Pausado'],done:['b-green','✓ Completado']};
-
-const DEFAULT={
-  urgencyItems:[],
-  lines:[
-    {id:"c1",name:"Cortadora 1",        status:"on", client:""},
-    {id:"c2",name:"Cortadora 2",        status:"on", client:""},
-    {id:"tb",name:"Tubos de Cartón",    status:"on", client:""},
-    {id:"e1",name:"Esquineros Línea 1", status:"on", client:""},
-    {id:"e2",name:"Esquineros Línea 2", status:"on", client:""},
-    {id:"e3",name:"Esquineros Línea 3", status:"off",client:""},
-    {id:"cu",name:"Máquina Cubeta",     status:"on", client:""},
-    {id:"tp",name:"Máquina Tapa",       status:"on", client:""},
-  ],
-  prodNotes:"",prodUpdated:"",
-  ops:[
-    {id:"compras",title:"Compras",           icon:"🛒",accent:"#0891b2",status:"ok",      items:[{text:"Sin pedidos urgentes.",tag:""}],updated:""},
-    {id:"cxc",   title:"Cuentas por cobrar", icon:"💰",accent:"#16a34a",status:"warn",    items:[{text:"3 facturas próximas a vencer.",tag:"Esta semana"}],updated:""},
-    {id:"cxp",   title:"Cuentas por pagar",  icon:"📤",accent:"#ea580c",status:"ok",      items:[{text:"Pagos del mes al corriente.",tag:""}],updated:""},
-    {id:"pagos", title:"Pagos de la semana", icon:"💳",accent:"#9333ea",status:"ok",      items:[{text:"Nómina procesada.",tag:"Lun"},{text:"Proveedores pagados.",tag:"Mar"}],updated:""},
-  ],
-  impl:[
-    {id:"avattia", title:"AVATTIA",  icon:"🤖",accent:"#2563eb",status:"progress",items:[{text:"Inventarios al 65%.",tag:"Inv."},{text:"Reunión viernes 10am.",tag:"Pendiente"}],updated:""},
-    {id:"contpaqi",title:"ContPAQi", icon:"📊",accent:"#9333ea",status:"progress",items:[{text:"Catálogos migrados.",tag:"✓"},{text:"Pruebas de facturación en curso.",tag:"En curso"}],updated:""},
-  ],
+var AREAS = ['Producción','Compras','AVATTIA','ContPAQi','C×Cobrar','C×Pagar','Pagos','General'];
+var SMAP = {
+  ok:       ['b-green',  '✓ OK'],
+  warn:     ['b-yellow', '⚠ Atención'],
+  alert:    ['b-red',    '🚨 Urgente'],
+  progress: ['b-blue',   '⟳ En proceso'],
+  paused:   ['b-gray',   '⏸ Pausado'],
+  done:     ['b-green',  '✓ Completado']
 };
 
-function sync(state,msg){
-  const d=document.getElementById('sdot'),t=document.getElementById('smsg');
-  d.className='sdot '+state;
-  t.textContent=msg;
-  t.style.color=state==='ok'?'var(--green)':state==='err'?'var(--red)':'var(--yellow)';
+var DEFAULT = {
+  urgencyItems: [],
+  lines: [
+    {id:"c1", name:"Cortadora 1",        status:"on",  client:""},
+    {id:"c2", name:"Cortadora 2",        status:"on",  client:""},
+    {id:"tb", name:"Tubos de Cartón",    status:"on",  client:""},
+    {id:"e1", name:"Esquineros Línea 1", status:"on",  client:""},
+    {id:"e2", name:"Esquineros Línea 2", status:"on",  client:""},
+    {id:"e3", name:"Esquineros Línea 3", status:"off", client:""},
+    {id:"cu", name:"Máquina Cubeta",     status:"on",  client:""},
+    {id:"tp", name:"Máquina Tapa",       status:"on",  client:""}
+  ],
+  prodNotes: "", prodUpdated: "",
+  ops: [
+    {id:"compras", title:"Compras",           icon:"🛒", accent:"#0891b2", status:"ok",       items:[{text:"Sin pedidos urgentes.", tag:""}], updated:""},
+    {id:"cxc",    title:"Cuentas por cobrar", icon:"💰", accent:"#16a34a", status:"warn",     items:[{text:"3 facturas próximas a vencer.", tag:"Esta semana"}], updated:""},
+    {id:"cxp",    title:"Cuentas por pagar",  icon:"📤", accent:"#ea580c", status:"ok",       items:[{text:"Pagos del mes al corriente.", tag:""}], updated:""},
+    {id:"pagos",  title:"Pagos de la semana", icon:"💳", accent:"#9333ea", status:"ok",       items:[{text:"Nómina procesada.", tag:"Lun"},{text:"Proveedores pagados.", tag:"Mar"}], updated:""}
+  ],
+  impl: [
+    {id:"avattia",  title:"AVATTIA",  icon:"🤖", accent:"#2563eb", status:"progress", items:[{text:"Inventarios al 65%.", tag:"Inv."},{text:"Reunión viernes 10am.", tag:"Pendiente"}], updated:""},
+    {id:"contpaqi", title:"ContPAQi", icon:"📊", accent:"#9333ea", status:"progress", items:[{text:"Catálogos migrados.", tag:"✓"},{text:"Pruebas de facturación en curso.", tag:"En curso"}], updated:""}
+  ]
+};
+
+function sync(state, msg) {
+  var d = document.getElementById('sdot');
+  var t = document.getElementById('smsg');
+  d.className = 'sdot ' + state;
+  t.textContent = msg;
+  t.style.color = state === 'ok' ? 'var(--green)' : state === 'err' ? 'var(--red)' : 'var(--yellow)';
 }
 
-async function cloudLoad(){
-  sync('syncing','Cargando datos de la nube...');
-  try{
-    const r=await fetch(BIN_URL+'/latest',{headers:{'X-Master-Key':API_KEY,'X-Bin-Meta':'false'}});
-    if(!r.ok)throw new Error(r.status);
-    const d=await r.json();
-    S=(d&&d.lines)?d:JSON.parse(JSON.stringify(DEFAULT));
-    sync('ok','Sincronizado · '+new Date().toLocaleTimeString('es-MX',{hour12:false}));
-  }catch(e){
-    const loc=localStorage.getItem('monitor_bk');
-    S=loc?JSON.parse(loc):JSON.parse(JSON.stringify(DEFAULT));
-    sync('err','Sin conexión — mostrando datos locales');
-  }
-  document.getElementById('loadMsg').style.display='none';
-  document.getElementById('content').style.display='block';
-  renderAll();
+function cloudLoad() {
+  sync('syncing', 'Cargando datos de la nube...');
+  fetch(BIN_URL + '/latest', {headers: {'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false'}})
+    .then(function(r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      S = (d && d.lines) ? d : JSON.parse(JSON.stringify(DEFAULT));
+      sync('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-MX', {hour12: false}));
+      document.getElementById('loadMsg').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      renderAll();
+    })
+    .catch(function() {
+      var loc = localStorage.getItem('monitor_bk');
+      S = loc ? JSON.parse(loc) : JSON.parse(JSON.stringify(DEFAULT));
+      sync('err', 'Sin conexión — datos locales');
+      document.getElementById('loadMsg').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      renderAll();
+    });
 }
 
-async function cloudSave(){
-  sync('syncing','Guardando...');
-  try{localStorage.setItem('monitor_bk',JSON.stringify(S));}catch(e){}
-  try{
-    const r=await fetch(BIN_URL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},body:JSON.stringify(S)});
-    if(!r.ok)throw new Error(r.status);
-    sync('ok','Guardado · '+new Date().toLocaleTimeString('es-MX',{hour12:false}));
-  }catch(e){
-    sync('err','Error al guardar en nube. Guardado localmente.');
-  }
+function cloudSave() {
+  sync('syncing', 'Guardando...');
+  try { localStorage.setItem('monitor_bk', JSON.stringify(S)); } catch(e) {}
+  fetch(BIN_URL, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json', 'X-Master-Key': API_KEY},
+    body: JSON.stringify(S)
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error(r.status);
+    sync('ok', 'Guardado · ' + new Date().toLocaleTimeString('es-MX', {hour12: false}));
+  })
+  .catch(function() {
+    sync('err', 'Error al guardar en nube. Guardado localmente.');
+  });
 }
 
-// Auto-refresh cada 60s para los que solo ven
-setInterval(async()=>{
-  if(editing)return;
-  try{
-    const r=await fetch(BIN_URL+'/latest',{headers:{'X-Master-Key':API_KEY,'X-Bin-Meta':'false'}});
-    if(!r.ok)return;
-    const d=await r.json();
-    if(d&&d.lines){S=d;renderAll();sync('ok','Actualizado · '+new Date().toLocaleTimeString('es-MX',{hour12:false}));}
-  }catch(e){}
-},60000);
-
-function tick(){
-  const n=new Date();
-  document.getElementById('clock').textContent=n.toLocaleTimeString('es-MX',{hour12:false});
-  const D=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],M=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  document.getElementById('dateS').textContent=`${D[n.getDay()]} ${n.getDate()} ${M[n.getMonth()]} ${n.getFullYear()}`;
+function exportBackup() {
+  if (!S) return;
+  var now = new Date();
+  var fecha = now.toLocaleDateString('es-MX').replace(/\//g, '-');
+  var hora = now.toLocaleTimeString('es-MX', {hour12: false}).replace(/:/g, '');
+  var nombre = 'monitor_respaldo_' + fecha + '_' + hora + '.json';
+  var blob = new Blob([JSON.stringify(S, null, 2)], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = nombre; a.click();
+  URL.revokeObjectURL(url);
+  sync('ok', 'Respaldo descargado: ' + nombre);
 }
-setInterval(tick,1000);tick();
 
-function buildWeek(){
-  const el=document.getElementById('weekRow');el.innerHTML='';
-  const now=new Date(),mon=new Date(now);
-  const dow=mon.getDay()===0?6:mon.getDay()-1;
-  mon.setDate(mon.getDate()-dow);
-  ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach((d,i)=>{
-    const dt=new Date(mon);dt.setDate(mon.getDate()+i);
-    const today=dt.toDateString()===now.toDateString();
-    const c=document.createElement('div');
-    c.className='day-chip'+(today?' today':'');
-    c.innerHTML=`<div class="day-dn">${d}</div><div class="day-dd">${dt.getDate()}</div>`;
+function importBackup(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data.lines) throw new Error('Archivo inválido');
+      S = data;
+      cloudSave();
+      renderAll();
+      sync('ok', 'Respaldo restaurado correctamente ✓');
+    } catch(err) {
+      sync('err', 'Error al restaurar: archivo inválido');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+setInterval(function() {
+  if (editing) return;
+  fetch(BIN_URL + '/latest', {headers: {'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false'}})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.lines) {
+        S = d;
+        renderAll();
+        sync('ok', 'Actualizado · ' + new Date().toLocaleTimeString('es-MX', {hour12: false}));
+      }
+    })
+    .catch(function() {});
+}, 60000);
+
+function tick() {
+  var n = new Date();
+  document.getElementById('clock').textContent = n.toLocaleTimeString('es-MX', {hour12: false});
+  var D = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  var M = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  document.getElementById('dateS').textContent = D[n.getDay()] + ' ' + n.getDate() + ' ' + M[n.getMonth()] + ' ' + n.getFullYear();
+}
+setInterval(tick, 1000); tick();
+
+function buildWeek() {
+  var el = document.getElementById('weekRow'); el.innerHTML = '';
+  var now = new Date(), mon = new Date(now);
+  var dow = mon.getDay() === 0 ? 6 : mon.getDay() - 1;
+  mon.setDate(mon.getDate() - dow);
+  ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(function(d, i) {
+    var dt = new Date(mon); dt.setDate(mon.getDate() + i);
+    var today = dt.toDateString() === now.toDateString();
+    var c = document.createElement('div');
+    c.className = 'day-chip' + (today ? ' today' : '');
+    c.innerHTML = '<div class="day-dn">' + d + '</div><div class="day-dd">' + dt.getDate() + '</div>';
     el.appendChild(c);
   });
 }
 
-function buildTicker(){
-  const items=S.lines.map(l=>({lbl:l.name+(l.client?' · '+l.client:''),cls:l.status==='on'?'tick-ok':l.status==='maint'?'tick-warn':'tick-stop'}));
-  (S.urgencyItems||[]).forEach(u=>items.push({lbl:(u.area?u.area+': ':'')+u.text,cls:'tick-stop'}));
-  document.getElementById('ticker').innerHTML=[...items,...items].map(i=>`<span class="tick-item ${i.cls}"><span class="tick-dot"></span>${i.lbl}</span>`).join('');
-}
-
-function renderUrgency(){
-  const list=S.urgencyItems||[];
-  document.getElementById('urgEmpty').style.display=list.length?'none':'';
-  document.getElementById('urgList').innerHTML=list.map(u=>`<div class="urg-row"><span class="urg-area">${u.area||'general'}</span><span class="urg-text">${u.text}</span></div>`).join('');
-}
-function openUrgency(){if(!editing)return;urgDraft=JSON.parse(JSON.stringify(S.urgencyItems||[]));if(!urgDraft.length)urgDraft.push({text:'',area:''});renderUrgEd();showOv('urgOv');}
-function renderUrgEd(){
-  document.getElementById('urgEditor').innerHTML=urgDraft.map((u,i)=>`
-    <div class="item-row"><div class="item-row-main">
-      <textarea class="item-textarea" placeholder="Describe la situación urgente..." oninput="urgDraft[${i}].text=this.value">${u.text}</textarea>
-      <div class="item-tag-row"><span class="tag-lbl">Área:</span>
-        <select onchange="urgDraft[${i}].area=this.value" style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:4px 6px;font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;outline:none;">
-          <option value="" ${!u.area?'selected':''}>— Sin área —</option>
-          ${AREAS.map(a=>`<option value="${a}" ${u.area===a?'selected':''}>${a}</option>`).join('')}
-        </select>
-      </div>
-    </div><div class="rm-col"><button class="rm-btn" onclick="rmUrgItem(${i})">✕</button></div></div>`).join('');
-}
-function addUrgItem(){urgDraft.push({text:'',area:''});renderUrgEd();}
-function rmUrgItem(i){urgDraft.splice(i,1);if(!urgDraft.length)urgDraft.push({text:'',area:''});renderUrgEd();}
-async function saveUrg(){S.urgencyItems=urgDraft.filter(u=>u.text.trim());await cloudSave();renderAll();closeOv('urgOv');}
-async function clearUrg(){S.urgencyItems=[];await cloudSave();renderAll();closeOv('urgOv');}
-
-function renderLines(){
-  const on=S.lines.filter(l=>l.status==='on').length,total=S.lines.length;
-  const b=document.getElementById('prodBadge');
-  b.textContent=`${on}/${total} activas`;
-  b.className='badge '+(on===total?'b-green':on>=total/2?'b-yellow':'b-red');
-  document.getElementById('prodLines').innerHTML=S.lines.map(l=>{
-    const stB=l.status==='on'?'<span class="badge b-green">corriendo</span>':l.status==='maint'?'<span class="badge b-yellow">mantenimiento</span>':'<span class="badge b-red">detenida</span>';
-    const cl=l.client?`<span class="lclient has">👤 ${l.client}</span>`:`<span class="lclient empty">sin cliente</span>`;
-    return `<div class="prod-line"><span class="ldot ${l.status==='on'?'on':l.status==='maint'?'maint':'off'}"></span><span class="lname">${l.name}</span>${cl}${stB}</div>`;
+function buildTicker() {
+  var items = S.lines.map(function(l) {
+    return {lbl: l.name + (l.client ? ' · ' + l.client : ''), cls: l.status === 'on' ? 'tick-ok' : l.status === 'maint' ? 'tick-warn' : 'tick-stop'};
+  });
+  (S.urgencyItems || []).forEach(function(u) {
+    items.push({lbl: (u.area ? u.area + ': ' : '') + u.text, cls: 'tick-stop'});
+  });
+  document.getElementById('ticker').innerHTML = items.concat(items).map(function(i) {
+    return '<span class="tick-item ' + i.cls + '"><span class="tick-dot"></span>' + i.lbl + '</span>';
   }).join('');
-  document.getElementById('prodNotes').textContent=S.prodNotes||'';
-  document.getElementById('prodUpd').textContent=S.prodUpdated?'↻ '+S.prodUpdated:'';
 }
-function openProd(){
-  document.getElementById('prodNotesIn').value=S.prodNotes||'';
-  document.getElementById('prodEditor').innerHTML=S.lines.map(l=>`
-    <div class="pe-row"><div class="pe-lbl">${l.name}</div>
-      <select data-lid="${l.id}">
-        <option value="on"    ${l.status==='on'   ?'selected':''}>✅ Corriendo</option>
-        <option value="maint" ${l.status==='maint'?'selected':''}>⚠️ Mantenimiento</option>
-        <option value="off"   ${l.status==='off'  ?'selected':''}>🔴 Detenida</option>
-      </select>
-      <input type="text" data-cid="${l.id}" value="${l.client}" placeholder="Cliente en turno...">
-    </div>`).join('');
+
+function renderUrgency() {
+  var list = S.urgencyItems || [];
+  document.getElementById('urgEmpty').style.display = list.length ? 'none' : '';
+  document.getElementById('urgList').innerHTML = list.map(function(u) {
+    return '<div class="urg-row"><span class="urg-area">' + (u.area || 'general') + '</span><span class="urg-text">' + u.text + '</span></div>';
+  }).join('');
+}
+
+function openUrgency() {
+  if (!editing) return;
+  urgDraft = JSON.parse(JSON.stringify(S.urgencyItems || []));
+  if (!urgDraft.length) urgDraft.push({text: '', area: ''});
+  renderUrgEd(); showOv('urgOv');
+}
+
+function renderUrgEd() {
+  document.getElementById('urgEditor').innerHTML = urgDraft.map(function(u, i) {
+    var opts = AREAS.map(function(a) {
+      return '<option value="' + a + '"' + (u.area === a ? ' selected' : '') + '>' + a + '</option>';
+    }).join('');
+    return '<div class="item-row"><div class="item-row-main">' +
+      '<textarea class="item-textarea" placeholder="Describe la situación urgente..." oninput="urgDraft[' + i + '].text=this.value">' + u.text + '</textarea>' +
+      '<div class="item-tag-row"><span class="tag-lbl">Área:</span>' +
+      '<select onchange="urgDraft[' + i + '].area=this.value" style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:4px 6px;font-size:13px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;outline:none;">' +
+      '<option value=""' + (!u.area ? ' selected' : '') + '>— Sin área —</option>' + opts + '</select></div></div>' +
+      '<div class="rm-col"><button class="rm-btn" onclick="rmUrgItem(' + i + ')">✕</button></div></div>';
+  }).join('');
+}
+
+function addUrgItem() { urgDraft.push({text: '', area: ''}); renderUrgEd(); }
+function rmUrgItem(i) { urgDraft.splice(i, 1); if (!urgDraft.length) urgDraft.push({text: '', area: ''}); renderUrgEd(); }
+function saveUrg() { S.urgencyItems = urgDraft.filter(function(u) { return u.text.trim(); }); cloudSave(); renderAll(); closeOv('urgOv'); }
+function clearUrg() { S.urgencyItems = []; cloudSave(); renderAll(); closeOv('urgOv'); }
+
+function renderLines() {
+  var on = S.lines.filter(function(l) { return l.status === 'on'; }).length;
+  var total = S.lines.length;
+  var b = document.getElementById('prodBadge');
+  b.textContent = on + '/' + total + ' activas';
+  b.className = 'badge ' + (on === total ? 'b-green' : on >= total / 2 ? 'b-yellow' : 'b-red');
+  document.getElementById('prodLines').innerHTML = S.lines.map(function(l) {
+    var stB = l.status === 'on' ? '<span class="badge b-green">corriendo</span>' : l.status === 'maint' ? '<span class="badge b-yellow">mantenimiento</span>' : '<span class="badge b-red">detenida</span>';
+    var cl = l.client ? '<span class="lclient has">👤 ' + l.client + '</span>' : '<span class="lclient empty">sin cliente</span>';
+    return '<div class="prod-line"><span class="ldot ' + (l.status === 'on' ? 'on' : l.status === 'maint' ? 'maint' : 'off') + '"></span><span class="lname">' + l.name + '</span>' + cl + stB + '</div>';
+  }).join('');
+  document.getElementById('prodNotes').textContent = S.prodNotes || '';
+  document.getElementById('prodUpd').textContent = S.prodUpdated ? '↻ ' + S.prodUpdated : '';
+}
+
+function openProd() {
+  document.getElementById('prodNotesIn').value = S.prodNotes || '';
+  document.getElementById('prodEditor').innerHTML = S.lines.map(function(l) {
+    return '<div class="pe-row"><div class="pe-lbl">' + l.name + '</div>' +
+      '<select data-lid="' + l.id + '">' +
+      '<option value="on"' + (l.status === 'on' ? ' selected' : '') + '>✅ Corriendo</option>' +
+      '<option value="maint"' + (l.status === 'maint' ? ' selected' : '') + '>⚠️ Mantenimiento</option>' +
+      '<option value="off"' + (l.status === 'off' ? ' selected' : '') + '>🔴 Detenida</option></select>' +
+      '<input type="text" data-cid="' + l.id + '" value="' + l.client + '" placeholder="Cliente en turno..."></div>';
+  }).join('');
   showOv('prodOv');
 }
-async function saveProd(){
-  document.querySelectorAll('[data-lid]').forEach(s=>{const l=S.lines.find(x=>x.id===s.dataset.lid);if(l)l.status=s.value;});
-  document.querySelectorAll('[data-cid]').forEach(inp=>{const l=S.lines.find(x=>x.id===inp.dataset.cid);if(l)l.client=inp.value.trim();});
-  S.prodNotes=document.getElementById('prodNotesIn').value;
-  S.prodUpdated=new Date().toLocaleString('es-MX',{hour12:false,dateStyle:'short',timeStyle:'short'});
-  await cloudSave();renderAll();closeOv('prodOv');
+
+function saveProd() {
+  document.querySelectorAll('[data-lid]').forEach(function(s) {
+    var l = S.lines.find(function(x) { return x.id === s.dataset.lid; });
+    if (l) l.status = s.value;
+  });
+  document.querySelectorAll('[data-cid]').forEach(function(inp) {
+    var l = S.lines.find(function(x) { return x.id === inp.dataset.cid; });
+    if (l) l.client = inp.value.trim();
+  });
+  S.prodNotes = document.getElementById('prodNotesIn').value;
+  S.prodUpdated = new Date().toLocaleString('es-MX', {hour12: false, dateStyle: 'short', timeStyle: 'short'});
+  cloudSave(); renderAll(); closeOv('prodOv');
 }
 
-function renderCard(c){
-  const [bc,bl]=SMAP[c.status]||['b-gray',c.status];
-  const items=(c.items||[]).map(it=>`<div class="ci"><div class="ci-dot" style="background:${c.accent}"></div><div class="ci-text">${it.text}</div>${it.tag?`<div class="ci-tag">${it.tag}</div>`:''}</div>`).join('');
-  const ea=editing?`onclick="openCard('${c.id}')"`:'' ;
-  return `<div class="${editing?'card editable':'card'}" id="card-${c.id}" style="--card-accent:${c.accent}" ${ea}>
-    <div class="card-hdr"><div class="card-ttl">${c.title}</div><div style="display:flex;gap:8px;align-items:center"><span class="badge ${bc}">${bl}</span><span class="card-icon">${c.icon}</span></div></div>
-    <div class="card-items">${items}</div>
-    ${c.updated?`<div class="card-upd">↻ ${c.updated}</div>`:''}
-  </div>`;
-}
-function renderCards(){
-  document.getElementById('opsGrid').innerHTML=S.ops.map(renderCard).join('');
-  document.getElementById('implGrid').innerHTML=S.impl.map(renderCard).join('');
-  const pc=document.getElementById('prodCard');
-  if(editing){pc.classList.add('editable');pc.onclick=openProd;}
-  else{pc.classList.remove('editable');pc.onclick=null;}
+function renderCard(c) {
+  var bc = (SMAP[c.status] || ['b-gray', c.status])[0];
+  var bl = (SMAP[c.status] || ['b-gray', c.status])[1];
+  var items = (c.items || []).map(function(it) {
+    return '<div class="ci"><div class="ci-dot" style="background:' + c.accent + '"></div><div class="ci-text">' + it.text + '</div>' + (it.tag ? '<div class="ci-tag">' + it.tag + '</div>' : '') + '</div>';
+  }).join('');
+  var ea = editing ? 'onclick="openCard(\'' + c.id + '\')"' : '';
+  return '<div class="' + (editing ? 'card editable' : 'card') + '" id="card-' + c.id + '" style="--card-accent:' + c.accent + '" ' + ea + '>' +
+    '<div class="card-hdr"><div class="card-ttl">' + c.title + '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center"><span class="badge ' + bc + '">' + bl + '</span><span class="card-icon">' + c.icon + '</span></div></div>' +
+    '<div class="card-items">' + items + '</div>' +
+    (c.updated ? '<div class="card-upd">↻ ' + c.updated + '</div>' : '') + '</div>';
 }
 
-function openCard(id){
-  const all=[...S.ops,...S.impl],card=all.find(c=>c.id===id);if(!card)return;
-  curCard=id;cardDraft=JSON.parse(JSON.stringify(card.items||[]));
-  if(!cardDraft.length)cardDraft.push({text:'',tag:''});
-  document.getElementById('cardOvTitle').textContent=card.icon+' '+card.title;
-  document.getElementById('cardOvBody').innerHTML=`
-    <div class="fl"><label>Estado</label>
-      <select id="cv-status">
-        <option value="ok"       ${card.status==='ok'      ?'selected':''}>✅ OK / Al día</option>
-        <option value="warn"     ${card.status==='warn'    ?'selected':''}>⚠️ Atención / Seguimiento</option>
-        <option value="alert"    ${card.status==='alert'   ?'selected':''}>🚨 Urgente / Alerta</option>
-        <option value="progress" ${card.status==='progress'?'selected':''}>⟳ En proceso</option>
-        <option value="paused"   ${card.status==='paused'  ?'selected':''}>⏸ Pausado</option>
-        <option value="done"     ${card.status==='done'    ?'selected':''}>✓ Completado</option>
-      </select>
-    </div>
-    <div class="items-lbl">Puntos / acciones — puedes agregar varios</div>
-    <div id="cardItemsEd"></div>
-    <button class="add-item-btn" onclick="addCardItem()">+ Agregar punto</button>
-    <div class="fl" style="margin-top:14px"><label>Última actualización</label>
-      <input type="text" id="cv-upd" value="${card.updated}" placeholder="Ej: Hoy 14:30 · Responsable">
-    </div>`;
-  renderCardItemsEd();showOv('cardOv');
-}
-function renderCardItemsEd(){
-  document.getElementById('cardItemsEd').innerHTML=cardDraft.map((it,i)=>`
-    <div class="item-row"><div class="item-row-main">
-      <textarea class="item-textarea" placeholder="Escribe el punto o acción con todo el detalle necesario..." oninput="cardDraft[${i}].text=this.value">${it.text}</textarea>
-      <div class="item-tag-row"><span class="tag-lbl">Etiqueta:</span>
-        <input class="item-tag-input" type="text" placeholder="Ej: Urgente, Lunes, ✓" value="${it.tag}" oninput="cardDraft[${i}].tag=this.value">
-      </div>
-    </div><div class="rm-col"><button class="rm-btn" onclick="rmCardItem(${i})">✕</button></div></div>`).join('');
-}
-function addCardItem(){cardDraft.push({text:'',tag:''});renderCardItemsEd();}
-function rmCardItem(i){cardDraft.splice(i,1);if(!cardDraft.length)cardDraft.push({text:'',tag:''});renderCardItemsEd();}
-async function saveCardModal(){
-  const all=[...S.ops,...S.impl],card=all.find(c=>c.id===curCard);if(!card)return;
-  card.status=document.getElementById('cv-status').value;
-  card.items=cardDraft.filter(it=>it.text.trim());
-  if(!card.items.length)card.items=[{text:'—',tag:''}];
-  const upd=document.getElementById('cv-upd').value.trim();
-  card.updated=upd||new Date().toLocaleString('es-MX',{hour12:false,dateStyle:'short',timeStyle:'short'});
-  await cloudSave();renderAll();closeOv('cardOv');
+function renderCards() {
+  document.getElementById('opsGrid').innerHTML = S.ops.map(renderCard).join('');
+  document.getElementById('implGrid').innerHTML = S.impl.map(renderCard).join('');
+  var pc = document.getElementById('prodCard');
+  if (editing) { pc.classList.add('editable'); pc.onclick = openProd; }
+  else { pc.classList.remove('editable'); pc.onclick = null; }
 }
 
-function toggleEdit(){
-  if(editing){
-    editing=false;
-    document.getElementById("fab").textContent="✏️";
-    document.getElementById("fab").classList.remove("on");
-    document.getElementById("fabBackup").style.display="none";
-    document.getElementById("fabRestore").style.display="none";
+function openCard(id) {
+  var all = S.ops.concat(S.impl);
+  var card = all.find(function(c) { return c.id === id; });
+  if (!card) return;
+  curCard = id;
+  cardDraft = JSON.parse(JSON.stringify(card.items || []));
+  if (!cardDraft.length) cardDraft.push({text: '', tag: ''});
+  document.getElementById('cardOvTitle').textContent = card.icon + ' ' + card.title;
+  document.getElementById('cardOvBody').innerHTML =
+    '<div class="fl"><label>Estado</label>' +
+    '<select id="cv-status">' +
+    '<option value="ok"' + (card.status === 'ok' ? ' selected' : '') + '>✅ OK / Al día</option>' +
+    '<option value="warn"' + (card.status === 'warn' ? ' selected' : '') + '>⚠️ Atención / Seguimiento</option>' +
+    '<option value="alert"' + (card.status === 'alert' ? ' selected' : '') + '>🚨 Urgente / Alerta</option>' +
+    '<option value="progress"' + (card.status === 'progress' ? ' selected' : '') + '>⟳ En proceso</option>' +
+    '<option value="paused"' + (card.status === 'paused' ? ' selected' : '') + '>⏸ Pausado</option>' +
+    '<option value="done"' + (card.status === 'done' ? ' selected' : '') + '>✓ Completado</option></select></div>' +
+    '<div class="items-lbl">Puntos / acciones — puedes agregar varios</div>' +
+    '<div id="cardItemsEd"></div>' +
+    '<button class="add-item-btn" onclick="addCardItem()">+ Agregar punto</button>' +
+    '<div class="fl" style="margin-top:14px"><label>Última actualización</label>' +
+    '<input type="text" id="cv-upd" value="' + card.updated + '" placeholder="Ej: Hoy 14:30 · Responsable"></div>';
+  renderCardItemsEd();
+  showOv('cardOv');
+}
+
+function renderCardItemsEd() {
+  document.getElementById('cardItemsEd').innerHTML = cardDraft.map(function(it, i) {
+    return '<div class="item-row"><div class="item-row-main">' +
+      '<textarea class="item-textarea" placeholder="Escribe el punto o acción con todo el detalle necesario..." oninput="cardDraft[' + i + '].text=this.value">' + it.text + '</textarea>' +
+      '<div class="item-tag-row"><span class="tag-lbl">Etiqueta:</span>' +
+      '<input class="item-tag-input" type="text" placeholder="Ej: Urgente, Lunes, ✓" value="' + it.tag + '" oninput="cardDraft[' + i + '].tag=this.value"></div></div>' +
+      '<div class="rm-col"><button class="rm-btn" onclick="rmCardItem(' + i + ')">✕</button></div></div>';
+  }).join('');
+}
+
+function addCardItem() { cardDraft.push({text: '', tag: ''}); renderCardItemsEd(); }
+function rmCardItem(i) { cardDraft.splice(i, 1); if (!cardDraft.length) cardDraft.push({text: '', tag: ''}); renderCardItemsEd(); }
+
+function saveCardModal() {
+  var all = S.ops.concat(S.impl);
+  var card = all.find(function(c) { return c.id === curCard; });
+  if (!card) return;
+  card.status = document.getElementById('cv-status').value;
+  card.items = cardDraft.filter(function(it) { return it.text.trim(); });
+  if (!card.items.length) card.items = [{text: '—', tag: ''}];
+  var upd = document.getElementById('cv-upd').value.trim();
+  card.updated = upd || new Date().toLocaleString('es-MX', {hour12: false, dateStyle: 'short', timeStyle: 'short'});
+  cloudSave(); renderAll(); closeOv('cardOv');
+}
+
+function toggleEdit() {
+  if (editing) {
+    editing = false;
+    document.getElementById('fab').textContent = '✏️';
+    document.getElementById('fab').classList.remove('on');
+    document.getElementById('fabBackup').style.display = 'none';
+    document.getElementById('fabRestore').style.display = 'none';
     renderAll();
   } else {
-    document.getElementById("authInp").value="";
-    document.getElementById("authErr").style.display="none";
-    showOv("authOv");
-    setTimeout(()=>document.getElementById("authInp").focus(),200);
+    document.getElementById('authInp').value = '';
+    document.getElementById('authErr').style.display = 'none';
+    showOv('authOv');
+    setTimeout(function() { document.getElementById('authInp').focus(); }, 200);
   }
 }
-function exportBackup(){
-  if(!S)return;
-  const now=new Date();
-  const fecha=now.toLocaleDateString("es-MX").replace(///g,"-");
-  const hora=now.toLocaleTimeString("es-MX",{hour12:false}).replace(/:/g,"");
-  const nombre="monitor_respaldo_"+fecha+"_"+hora+".json";
-  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download=nombre;a.click();
-  URL.revokeObjectURL(url);
-  sync("ok","Respaldo descargado: "+nombre);
-}
-async function importBackup(event){
-  const file=event.target.files[0];if(!file)return;
-  try{
-    const text=await file.text();
-    const data=JSON.parse(text);
-    if(!data.lines)throw new Error("Archivo invalido");
-    S=data;
-    await cloudSave();
+
+function doAuth() {
+  if (document.getElementById('authInp').value.trim().toLowerCase() === PASS) {
+    editing = true;
+    document.getElementById('fab').textContent = '✅';
+    document.getElementById('fab').classList.add('on');
+    document.getElementById('fabBackup').style.display = 'flex';
+    document.getElementById('fabRestore').style.display = 'flex';
+    closeOv('authOv');
     renderAll();
-    sync("ok","Respaldo restaurado correctamente");
-  }catch(e){
-    sync("err","Error al restaurar: archivo invalido");
+  } else {
+    document.getElementById('authErr').style.display = 'block';
+    document.getElementById('authInp').value = '';
+    document.getElementById('authInp').focus();
   }
-  event.target.value="";
-}
-function doAuth(){
-  if(document.getElementById('authInp').value.trim().toLowerCase()===PASS){
-    editing=true;document.getElementById("fab").textContent="✅";document.getElementById("fab").classList.add("on");document.getElementById("fabBackup").style.display="flex";document.getElementById("fabRestore").style.display="flex";closeOv("authOv");renderAll();
-  }else{document.getElementById('authErr').style.display='block';document.getElementById('authInp').value='';document.getElementById('authInp').focus();}
 }
 
-function showOv(id){document.getElementById(id).classList.add('show');}
-function closeOv(id){document.getElementById(id).classList.remove('show');}
-['authOv','urgOv','cardOv','prodOv'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)closeOv(id);});});
+function showOv(id) { document.getElementById(id).classList.add('show'); }
+function closeOv(id) { document.getElementById(id).classList.remove('show'); }
 
-function renderAll(){buildWeek();buildTicker();renderLines();renderCards();renderUrgency();}
+['authOv','urgOv','cardOv','prodOv'].forEach(function(id) {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target.id === id) closeOv(id);
+  });
+});
+
+function renderAll() { buildWeek(); buildTicker(); renderLines(); renderCards(); renderUrgency(); }
+
 cloudLoad();
 </script>
 </body>
